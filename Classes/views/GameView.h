@@ -2,6 +2,7 @@
 #define __GAME_VIEW_H__
 
 #include "cocos2d.h"
+#include "ui/CocosGUI.h"
 #include "CardView.h"
 #include "../models/GameModel.h"
 #include <map>
@@ -104,6 +105,16 @@ public:
      */
     void removeCardView(int cardId);
     
+    /**
+     * @brief 获取底牌堆位置
+     */
+    cocos2d::Vec2 getTrayPosition() const;
+    
+    /**
+     * @brief 获取备用牌堆位置
+     */
+    cocos2d::Vec2 getStackPosition() const;
+    
 private:
     /**
      * @brief 创建主牌区
@@ -125,23 +136,13 @@ private:
      */
     void createUIButtons();
     
-    /**
-     * @brief 获取底牌堆位置
-     */
-    cocos2d::Vec2 getTrayPosition() const;
-    
-    /**
-     * @brief 获取备用牌堆位置
-     */
-    cocos2d::Vec2 getStackPosition() const;
-    
 private:
     std::map<int, CardView*> _cardViews;        // 所有卡牌视图的映射表
     cocos2d::Layer* _playfieldLayer;            // 主牌区层
     cocos2d::Layer* _trayLayer;                 // 底牌堆层
     cocos2d::Layer* _stackLayer;                // 备用牌堆层
     cocos2d::ui::Button* _undoButton;           // 撤销按钮
-    cocos2d::Sprite* _stackSprite;              // 备用牌堆精灵（可点击）
+    cocos2d::Node* _stackSprite;                // 备用牌堆节点（可点击）
     
     CardClickCallback _cardClickCallback;       // 卡牌点击回调
     StackClickCallback _stackClickCallback;     // 备用牌堆点击回调

@@ -8,9 +8,10 @@ static const float kDesignWidth = 1080.0f;
 static const float kDesignHeight = 2080.0f;
 static const float kPlayfieldHeight = 1500.0f;
 static const float kStackAreaHeight = 580.0f;
-static const float kTrayPosY = 400.0f;      // 底牌堆Y坐标
-static const float kStackPosY = 200.0f;     // 备用牌堆Y坐标
-static const float kUndoButtonPosY = 80.0f; // 撤销按钮Y坐标
+static const float kPlayfieldOffsetY = 700.0f;  // 主牌区整体向上偏移
+static const float kTrayPosY = 400.0f;          // 底牌堆Y坐标（向上移动）
+static const float kStackPosY = 400.0f;         // 备用牌堆Y坐标（和底牌堆同高）
+static const float kUndoButtonPosY = 250.0f;    // 撤销按钮Y坐标（也向上移）
 
 GameView* GameView::create()
 {
@@ -63,6 +64,8 @@ void GameView::initGameView(const GameModel* gameModel)
             switch (cardModel->getLocation()) {
                 case CL_PLAYFIELD:
                     _playfieldLayer->addChild(cardView);
+                    // 主牌区卡牌整体向上偏移
+                    cardView->setPositionY(cardView->getPositionY() + kPlayfieldOffsetY);
                     break;
                 case CL_TRAY:
                     _trayLayer->addChild(cardView);
@@ -162,47 +165,57 @@ void GameView::createStackArea()
     _stackLayer = Layer::create();
     this->addChild(_stackLayer, 2);
     
-    // 创建备用牌堆的可点击区域
-    _stackSprite = Sprite::create();
-    if (!_stackSprite) {
-        _stackSprite = Sprite::create("HelloWorld.png");
-    }
+    // 创建备用牌堆的可点击区域（使用DrawNode绘制）
+    auto drawNode = DrawNode::create();
+    Vec2 stackPos = getStackPosition();
     
-    if (_stackSprite) {
-        _stackSprite->setPosition(getStackPosition());
-        _stackSprite->setContentSize(Size(120, 168));
-        _stackSprite->setColor(Color3B(150, 150, 200));
-        _stackLayer->addChild(_stackSprite);
+    // 绘制一个灰色矩形表示牌堆
+    Vec2 rect[4] = {
+        Vec2(-60, -84),
+        Vec2(60, -84),
+        Vec2(60, 84),
+        Vec2(-60, 84)
+    };
+    drawNode->drawSolidPoly(rect, 4, Color4F(0.3f, 0.3f, 0.3f, 1.0f));
+    drawNode->drawPoly(rect, 4, true, Color4F::WHITE);
+    
+    // 添加"STACK"文字
+    auto label = Label::createWithSystemFont("STACK", "Arial", 24);
+    label->setPosition(Vec2(0, 0));
+    label->setColor(Color3B::WHITE);
+    drawNode->addChild(label);
+    
+    drawNode->setPosition(stackPos);
+    _stackLayer->addChild(drawNode);
+    _stackSprite = drawNode;
+    
+    // 添加触摸监听器
+    auto listener = EventListenerTouchOneByOne::create();
+    listener->setSwallowTouches(true);
+    
+    listener->onTouchBegan = [this, drawNode](Touch* touch, Event* event) -> bool {
+        Vec2 locationInNode = drawNode->convertToNodeSpace(touch->getLocation());
+        Rect touchRect = Rect(-60, -84, 120, 168);
         
-        // 添加触摸监听器
-        auto listener = EventListenerTouchOneByOne::create();
-        listener->setSwallowTouches(true);
-        
-        listener->onTouchBegan = [this](Touch* touch, Event* event) -> bool {
-            Vec2 locationInNode = _stackSprite->convertToNodeSpace(touch->getLocation());
-            Size size = _stackSprite->getContentSize();
-            Rect rect = Rect(0, 0, size.width, size.height);
-            
-            if (rect.containsPoint(locationInNode)) {
-                _stackSprite->setScale(0.95f);
-                return true;
-            }
-            return false;
-        };
-        
-        listener->onTouchEnded = [this](Touch* touch, Event* event) {
-            _stackSprite->setScale(1.0f);
-            if (_stackClickCallback) {
-                _stackClickCallback();
-            }
-        };
-        
-        listener->onTouchCancelled = [this](Touch* touch, Event* event) {
-            _stackSprite->setScale(1.0f);
-        };
-        
-        _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, _stackSprite);
-    }
+        if (touchRect.containsPoint(locationInNode)) {
+            drawNode->setScale(0.95f);
+            return true;
+        }
+        return false;
+    };
+    
+    listener->onTouchEnded = [this, drawNode](Touch* touch, Event* event) {
+        drawNode->setScale(1.0f);
+        if (_stackClickCallback) {
+            _stackClickCallback();
+        }
+    };
+    
+    listener->onTouchCancelled = [this, drawNode](Touch* touch, Event* event) {
+        drawNode->setScale(1.0f);
+    };
+    
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, drawNode);
 }
 
 void GameView::createUIButtons()
@@ -222,10 +235,12 @@ void GameView::createUIButtons()
 
 Vec2 GameView::getTrayPosition() const
 {
-    return Vec2(kDesignWidth / 2, kTrayPosY);
+    // 底牌堆位置：屏幕中央偏左
+    return Vec2(kDesignWidth / 2 - 150, kTrayPosY);
 }
 
 Vec2 GameView::getStackPosition() const
 {
+    // 备用牌堆位置：屏幕中央
     return Vec2(kDesignWidth / 2, kStackPosY);
 } 

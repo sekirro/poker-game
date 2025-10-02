@@ -57,21 +57,47 @@ bool CardView::init(const CardModel* cardModel)
         texturePath = CardResConfig::getCardBackTexture();
     }
     
-    // 初始化Sprite
+    // 初始化Sprite（使用纯色替代，因为暂无图片资源）
     if (!Sprite::init()) {
-        // 如果纹理加载失败，创建一个占位的ColorRect
-        if (!Sprite::initWithFile("HelloWorld.png")) {
-            // 创建一个简单的颜色精灵作为占位
-            auto texture = Director::getInstance()->getTextureCache()->addImage("HelloWorld.png");
-            if (!texture) {
-                return false;
-            }
-        }
-        // 设置颜色来区分不同的牌
-        this->setColor(Color3B(200, 200, 200));
+        return false;
     }
     
-    // 设置卡牌大小
+    // 创建一个彩色矩形作为卡牌占位符
+    auto drawNode = DrawNode::create();
+    
+    // 根据花色设置不同颜色
+    Color4F cardColor;
+    switch (_suit) {
+        case CST_CLUBS:    cardColor = Color4F(0.2f, 0.8f, 0.2f, 1.0f); break; // 绿色
+        case CST_DIAMONDS: cardColor = Color4F(0.8f, 0.2f, 0.2f, 1.0f); break; // 红色
+        case CST_HEARTS:   cardColor = Color4F(0.8f, 0.4f, 0.6f, 1.0f); break; // 粉色
+        case CST_SPADES:   cardColor = Color4F(0.2f, 0.2f, 0.8f, 1.0f); break; // 蓝色
+        default:           cardColor = Color4F(0.5f, 0.5f, 0.5f, 1.0f); break; // 灰色
+    }
+    
+    // 绘制卡牌矩形
+    Vec2 rect[4] = {
+        Vec2(0, 0),
+        Vec2(kCardWidth, 0),
+        Vec2(kCardWidth, kCardHeight),
+        Vec2(0, kCardHeight)
+    };
+    drawNode->drawSolidPoly(rect, 4, cardColor);
+    
+    // 添加边框
+    drawNode->drawPoly(rect, 4, true, Color4F::WHITE);
+    
+    // 添加牌面文字
+    auto label = Label::createWithSystemFont(
+        CardResConfig::getFaceName(_face), 
+        "Arial", 
+        40
+    );
+    label->setPosition(Vec2(kCardWidth/2, kCardHeight/2));
+    label->setColor(Color3B::WHITE);
+    drawNode->addChild(label);
+    
+    this->addChild(drawNode);
     this->setContentSize(Size(kCardWidth, kCardHeight));
     this->setPosition(cardModel->getPosition());
     

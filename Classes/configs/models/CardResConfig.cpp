@@ -49,10 +49,10 @@ std::string CardResConfig::getSuitName(CardSuitType suit)
 std::string CardResConfig::getSuitSymbol(CardSuitType suit)
 {
     switch (suit) {
-        case CST_CLUBS:    return "♣";
-        case CST_DIAMONDS: return "♦";
-        case CST_HEARTS:   return "♥";
-        case CST_SPADES:   return "♠";
+        case CST_CLUBS:    return "C";
+        case CST_DIAMONDS: return "D";
+        case CST_HEARTS:   return "H";
+        case CST_SPADES:   return "S";
         default:           return "";
     }
 } 
